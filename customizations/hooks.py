@@ -64,6 +64,18 @@ jinja = {
 	],
 }
 
+doc_events = {
+    "Sales Order": {
+        "before_submit": "customizations.api.before_order_submit",
+    },
+    "Item Price": {
+		"on_update": "customizations.api.update_price_list_rate",
+	},
+    "Purchase Receipt": {
+        "before_submit": "customizations.api.before_receipt_submit",
+    },
+}
+
 # Installation
 # ------------
 
@@ -122,13 +134,6 @@ jinja = {
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
 
 # Scheduled Tasks
 # ---------------
