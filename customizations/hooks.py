@@ -58,11 +58,11 @@ app_license = "mit"
 # Jinja
 # ----------
 
-# add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "customizations.utils.jinja_methods",
-# 	"filters": "customizations.utils.jinja_filters"
-# }
+jinja = {
+	"methods": [
+		"customizations.api.get_customer_balance",
+	],
+}
 
 # Installation
 # ------------
