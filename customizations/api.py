@@ -54,6 +54,7 @@ def update_price_list_rate(doc, method):
         
 
 def update_tables(new_price, item_code):
+    return
     price_lists = frappe.get_all(
         "Price List", 
         fields=['custom_percentage_markup', 'name'],
