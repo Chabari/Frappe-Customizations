@@ -74,3 +74,12 @@ def before_receipt_submit(doc, method):
         x_price = frappe.db.get_value('Item Price', {'item_code': item_code, 'price_list': 'Standard Buying'}, ['price_list_rate'], as_dict=1)
         if x_price and float(x_price.price_list_rate) != float(new_price):
             update_tables(new_price, item_code)
+            
+def prevent_reprint(doc, method=None, meth = None):
+    user = frappe.session.user
+    if "Reprint Invoice" in frappe.get_roles(user):
+        return
+    if doc.get("custom_first_printed"):
+        frappe.throw("This Invoice has already been printed. Only System Manager can reprint.")
+    doc.db_set("custom_first_printed", 1)
+    frappe.db.commit()
