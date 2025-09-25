@@ -82,4 +82,4 @@ def prevent_reprint(doc, method=None, meth = None):
     if doc.get("custom_first_printed"):
         frappe.throw("This Invoice has already been printed. Only System Manager can reprint.")
     doc.db_set("custom_first_printed", 1)
-    frappe.db.commit()
+    doc.db_update()
