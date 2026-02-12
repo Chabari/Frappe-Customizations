@@ -95,8 +95,19 @@ def create_sales_invoice_from_pos(doc, method):
     # Skip return invoices — handle them separately if needed
     if doc.get("is_return"):
         return
+    
+    frappe.enqueue(
+        'customizations.api.save_sales_invoice_from_pos',
+        queue='long',
+        timeout=1500,
+        pos_name=doc.name
+    )
+    frappe.logger().info("Scheduled invoice creation successfully")
 
+    
+def save_sales_invoice_from_pos(pos_name):
     try:
+        doc = frappe.get_doc("POS Invoice", pos_name)
         si = frappe.new_doc("Sales Invoice")
 
         # Map header fields from POS Invoice → Sales Invoice
@@ -144,21 +155,15 @@ def create_sales_invoice_from_pos(doc, method):
         si.posa_is_printed = 1
         si.save()
         si.submit()
-
-        frappe.msgprint(
-            _("Sales Invoice {0} created from POS Invoice {1}").format(
+        
+        frappe.logger().info(_("Sales Invoice {0} created from POS Invoice {1}").format(
                 frappe.bold(si.name), frappe.bold(doc.name)
-            ),
-            alert=True,
-        )
+            ))
 
     except Exception:
         frappe.log_error(
             title=_("Auto Sales Invoice Creation Failed"),
             message=frappe.get_traceback(),
         )
-        frappe.msgprint(
-            _("Failed to create Sales Invoice from POS Invoice {0}. Check Error Log.").format(doc.name),
-            alert=True,
-            indicator="red",
-        )
+        frappe.log_error( _("Failed to create Sales Invoice from POS Invoice {0}. Check Error Log.").format(doc.name))
+        
