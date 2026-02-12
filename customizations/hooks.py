@@ -12,17 +12,20 @@ jinja = {
 }
 
 doc_events = {
-    "Sales Order": {
-        "before_submit": "customizations.api.before_order_submit",
-    },
-    "Item Price": {
-		"on_update": "customizations.api.update_price_list_rate",
-	},
-    "Purchase Receipt": {
-        "before_submit": "customizations.api.before_receipt_submit",
-    },
-    "Sales Invoice": {
-        "before_print": "customizations.api.prevent_reprint"
+    # "Sales Order": {
+    #     "before_submit": "customizations.api.before_order_submit",
+    # },
+    # "Item Price": {
+	# 	"on_update": "customizations.api.update_price_list_rate",
+	# },
+    # "Purchase Receipt": {
+    #     "before_submit": "customizations.api.before_receipt_submit",
+    # },
+    # "Sales Invoice": {
+    #     "before_print": "customizations.api.prevent_reprint"
+    # },
+    "POS Invoice": {
+        "on_submit": "customizations.api.create_sales_invoice_from_pos",
     },
 }
 

@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import flt
 from frappe import _
+from frappe.model.mapper import map_doc, map_child_doc
 import math
 
 def get_customer_balance(customer):
@@ -86,3 +87,78 @@ def prevent_reprint(doc, method=None, meth = None):
     # frappe.db.commit()
     query = f"""UPDATE `tabSales Invoice` SET custom_first_printed=1 WHERE name='{doc.name}' """
     frappe.db.sql(query)
+
+
+def create_sales_invoice_from_pos(doc, method):
+    """Create a Sales Invoice automatically when a POS Invoice is submitted."""
+
+    # Skip return invoices — handle them separately if needed
+    if doc.get("is_return"):
+        return
+
+    try:
+        si = frappe.new_doc("Sales Invoice")
+
+        # Map header fields from POS Invoice → Sales Invoice
+        map_doc(doc, si, table_map={"doctype": si.doctype})
+
+        # Override key flags
+        si.is_pos = doc.is_pos
+        si.is_consolidated = 0
+        si.set_posting_time = 1
+        si.posting_date = doc.posting_date
+        si.posting_time = doc.posting_time
+        si.due_date = doc.due_date
+        si.pos_profile = doc.pos_profile
+        si.payments = doc.payments
+        si.update_stock = doc.update_stock
+
+        # Link back to the originating POS Invoice
+        # si.pos_invoice = doc.name
+
+        # ── Items ──
+        si_items = []
+        for item in doc.get("items", []):
+            si_item = map_child_doc(item, si, {"doctype": "Sales Invoice Item"})
+            si_item.pos_invoice = doc.name
+            si_item.pos_invoice_item = item.name
+            si_items.append(si_item)
+        si.set("items", si_items)
+
+        # ── Taxes ──
+        si_taxes = []
+        for tax in doc.get("taxes", []):
+            si_tax = map_child_doc(tax, si, {"doctype": "Sales Taxes and Charges"})
+            si_taxes.append(si_tax)
+        si.set("taxes", si_taxes)
+
+        # ── Sales Team ──
+        si_team = []
+        for member in doc.get("sales_team", []):
+            si_member = map_child_doc(member, si, {"doctype": "Sales Team"})
+            si_team.append(si_member)
+        si.set("sales_team", si_team)
+
+        si.flags.ignore_permissions = True
+        frappe.flags.ignore_account_permission = True
+        si.posa_is_printed = 1
+        si.save()
+        si.submit()
+
+        frappe.msgprint(
+            _("Sales Invoice {0} created from POS Invoice {1}").format(
+                frappe.bold(si.name), frappe.bold(doc.name)
+            ),
+            alert=True,
+        )
+
+    except Exception:
+        frappe.log_error(
+            title=_("Auto Sales Invoice Creation Failed"),
+            message=frappe.get_traceback(),
+        )
+        frappe.msgprint(
+            _("Failed to create Sales Invoice from POS Invoice {0}. Check Error Log.").format(doc.name),
+            alert=True,
+            indicator="red",
+        )
